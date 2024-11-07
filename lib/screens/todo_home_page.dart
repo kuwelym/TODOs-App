@@ -60,6 +60,7 @@ class _TodoHomePageState extends State<TodoHomePage> {
       todos[index]['isCompleted'] = true;
     });
     _saveTodos();
+    _notificationService.cancelNotification(index);
   }
 
   void _addTodo(String title, DateTime dueTime) {
@@ -73,7 +74,7 @@ class _TodoHomePageState extends State<TodoHomePage> {
     });
     _saveTodos();
     if (!todos.last['isCompleted']) {
-      _notificationService.scheduleNotification(dueTime);
+      _notificationService.scheduleNotification(todos.length - 1, dueTime);
     }
   }
 

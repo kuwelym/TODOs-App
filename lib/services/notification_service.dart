@@ -32,7 +32,7 @@ class NotificationService {
         ?.requestNotificationsPermission();
   }
 
-  Future<void> scheduleNotification(DateTime dueTime) async {
+  Future<void> scheduleNotification(int id, DateTime dueTime) async {
     const AndroidNotificationDetails androidPlatformChannelSpecifics =
     AndroidNotificationDetails(
       'your_channel_id',
@@ -54,7 +54,7 @@ class NotificationService {
     );
 
     await flutterLocalNotificationsPlugin.zonedSchedule(
-      0,
+      id,
       'TODO Alert',
       'You have a TODO due in 10 minutes',
       scheduledTime,
@@ -63,5 +63,8 @@ class NotificationService {
       uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
       matchDateTimeComponents: DateTimeComponents.time, // Use if repeating daily
     );
+  }
+  Future<void> cancelNotification(int id) async {
+    await flutterLocalNotificationsPlugin.cancel(id);
   }
 }
