@@ -4,14 +4,16 @@ import 'package:intl/intl.dart';
 class TodoList extends StatefulWidget {
   final List<Map<String, dynamic>> todos;
   final String filter;
+  final Function(int) markTodoAsCompleted;
 
-  const TodoList({super.key, required this.todos, required this.filter});
+  const TodoList({super.key, required this.todos, required this.filter, required this.markTodoAsCompleted});
 
   @override
   State<TodoList> createState() => _TodoListState();
 }
 
 class _TodoListState extends State<TodoList> {
+  final Map<int, bool> _checkboxStates = {};
 
   @override
   Widget build(BuildContext context) {
@@ -24,20 +26,33 @@ class _TodoListState extends State<TodoList> {
       return !todo['isCompleted'];
     }).toList();
 
-
     return ListView.builder(
       itemCount: filteredTodos.length,
       itemBuilder: (context, index) {
         var todo = filteredTodos[index];
         var dueTime = DateFormat('dd/MM/yyyy HH:mm').format(todo['dueTime']);
+
+        bool isChecked = _checkboxStates[todo.hashCode] ?? todo['isCompleted'];
+
         return ListTile(
           title: Text(todo['title']),
           subtitle: Text('Due: $dueTime'),
           trailing: Checkbox(
-            value: todo['isCompleted'],
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(25.0),
+            ),
+            value: isChecked,
             onChanged: (bool? value) {
               setState(() {
-                todo['isCompleted'] = value!;
+                _checkboxStates[todo.hashCode] = value!;
+              });
+
+              Future.delayed(const Duration(milliseconds: 500), () {
+                setState(() {
+                  todo['isCompleted'] = value;
+                  _checkboxStates.remove(todo.hashCode);
+                  widget.markTodoAsCompleted(index);
+                });
               });
             },
           ),
