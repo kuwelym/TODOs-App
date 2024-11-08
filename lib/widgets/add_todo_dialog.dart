@@ -13,12 +13,9 @@ class AddTodoDialog extends StatefulWidget {
 
 class _AddTodoDialogState extends State<AddTodoDialog> {
   final TextEditingController _titleController = TextEditingController();
-  String? _selectedCategory;
   DateTime? _selectedDateTime;
 
   bool get _isAddButtonEnabled => _titleController.text.isNotEmpty;
-
-  final List<String> categories = ["Work", "Personal", "Wishlist"];
 
   @override
   void initState() {
@@ -58,15 +55,6 @@ class _AddTodoDialogState extends State<AddTodoDialog> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        CategoryDropdown(
-                          selectedCategory: _selectedCategory,
-                          categories: categories,
-                          onChanged: (String? newValue) {
-                            setState(() {
-                              _selectedCategory = newValue;
-                            });
-                          },
-                        ),
                         DateTimePicker(
                           selectedDateTime: _selectedDateTime,
                           onDateTimeChanged: (DateTime? newDateTime) {
@@ -106,34 +94,6 @@ class _AddTodoDialogState extends State<AddTodoDialog> {
   void dispose() {
     _titleController.dispose();
     super.dispose();
-  }
-}
-
-class CategoryDropdown extends StatelessWidget {
-  final String? selectedCategory;
-  final List<String> categories;
-  final ValueChanged<String?> onChanged;
-
-  const CategoryDropdown({
-    super.key,
-    required this.selectedCategory,
-    required this.categories,
-    required this.onChanged,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return DropdownButton<String>(
-      hint: const Text('No Category'),
-      value: selectedCategory,
-      items: categories.map((String category) {
-        return DropdownMenuItem<String>(
-          value: category,
-          child: Text(category),
-        );
-      }).toList(),
-      onChanged: onChanged,
-    );
   }
 }
 

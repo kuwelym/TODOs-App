@@ -1,5 +1,4 @@
 import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../widgets/todo_list.dart';
@@ -14,7 +13,7 @@ class TodoHomePage extends StatefulWidget {
 }
 
 class _TodoHomePageState extends State<TodoHomePage> {
-  List<Map<String, dynamic>> todos = [];
+  List<Map<String, dynamic>> _todos = [];
   List<Map<String, dynamic>> _filteredTodos = [];
   final TextEditingController _searchController = TextEditingController();
   final NotificationService _notificationService = NotificationService();
@@ -30,24 +29,25 @@ class _TodoHomePageState extends State<TodoHomePage> {
     final prefs = await SharedPreferences.getInstance();
     final todosString = prefs.getString('todos');
     if (todosString != null) {
+      final loadedTodos = List<Map<String, dynamic>>.from(
+        json.decode(todosString).map((todo) {
+          todo['dueTime'] = DateTime.parse(todo['dueTime']);
+          return todo;
+        }),
+      );
       setState(() {
-        todos = List<Map<String, dynamic>>.from(
-          json.decode(todosString).map((todo) {
-            todo['dueTime'] = DateTime.parse(todo['dueTime']);
-            return todo;
-          }),
-        );
-        _filteredTodos = todos;
+        _todos = loadedTodos;
+        _filteredTodos = List.from(_todos);
       });
     }
   }
 
   Future<void> _saveTodos() async {
     final prefs = await SharedPreferences.getInstance();
-    prefs.setString(
+    await prefs.setString(
       'todos',
       json.encode(
-        todos.map((todo) => {
+        _todos.map((todo) => {
           ...todo,
           'dueTime': todo['dueTime'].toIso8601String(),
         }).toList(),
@@ -57,32 +57,38 @@ class _TodoHomePageState extends State<TodoHomePage> {
 
   void _markTodoAsCompleted(int index) {
     setState(() {
-      todos[index]['isCompleted'] = true;
+      _todos[index]['isCompleted'] = true;
+      _todos[index]['completedDate'] = DateTime.now().toIso8601String();
     });
     _saveTodos();
     _notificationService.cancelNotification(index);
   }
 
   void _addTodo(String title, DateTime dueTime) {
+    final newTodo = {
+      'title': title,
+      'dueTime': dueTime,
+      'isCompleted': false,
+    };
     setState(() {
-      todos.add({
-        'title': title,
-        'dueTime': dueTime,
-        'isCompleted': false,
-      });
-      _filteredTodos = todos;
+      _todos.add(newTodo);
+      _filteredTodos = List.from(_todos);
     });
     _saveTodos();
-    if (!todos.last['isCompleted']) {
-      _notificationService.scheduleNotification(todos.length - 1, dueTime);
+    if (!_todos.last['isCompleted']) {
+      _notificationService.scheduleNotification(_todos.length - 1, dueTime);
     }
   }
 
   void _filterTodos(String query) {
     setState(() {
       _filteredTodos = query.isEmpty
-          ? todos
-          : todos.where((todo) => todo['title'].toLowerCase().contains(query.toLowerCase())).toList();
+          ? List.from(_todos)
+          : _todos
+          .where((todo) => todo['title']
+          .toLowerCase()
+          .contains(query.toLowerCase()))
+          .toList();
     });
   }
 
@@ -120,21 +126,9 @@ class _TodoHomePageState extends State<TodoHomePage> {
             Expanded(
               child: TabBarView(
                 children: [
-                  TodoList(
-                    todos: _filteredTodos,
-                    filter: 'All',
-                    markTodoAsCompleted: _markTodoAsCompleted,
-                  ),
-                  TodoList(
-                    todos: _filteredTodos,
-                    filter: 'Today',
-                    markTodoAsCompleted: _markTodoAsCompleted,
-                  ),
-                  TodoList(
-                    todos: _filteredTodos,
-                    filter: 'Upcoming',
-                    markTodoAsCompleted: _markTodoAsCompleted,
-                  ),
+                  _buildTodoList('All'),
+                  _buildTodoList('Today'),
+                  _buildTodoList('Upcoming'),
                 ],
               ),
             ),
@@ -145,6 +139,14 @@ class _TodoHomePageState extends State<TodoHomePage> {
           child: const Icon(Icons.add),
         ),
       ),
+    );
+  }
+
+  Widget _buildTodoList(String filter) {
+    return TodoList(
+      todos: _filteredTodos,
+      filter: filter,
+      markTodoAsCompleted: _markTodoAsCompleted,
     );
   }
 }
